@@ -1,8 +1,19 @@
-# Welcome to your CDK TypeScript project
+# Work in progress for L2 CDK Constructs for ElastiCache (MemCached and Redis)
 
-This is a blank project for CDK development with TypeScript.
+The interesting part is in the directory `lib/aws-elasticache`
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+When finished the purpose is to merge the code into the `aws-cdk` project.
+
+## Coding guidelines
+
+- sensible defaults into the L1 constructs
+- minimal external interface (hide anything unnecessary if possible)
+- code should prevent errors from CloudFormation validation errors
+- add do docs as much as possible for in code completion
+- the constructs should behave like other constricts in CDK
+- prevent users from adding secrets to the code
+
+# The project also is a CDK project you can use to do intergration tests
 
 ## Useful commands
 

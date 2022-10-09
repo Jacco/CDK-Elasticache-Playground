@@ -8,7 +8,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { CfnDeliveryStream } from 'aws-cdk-lib/aws-kinesisfirehose';
 
-import * as elasticache from './aws-elasticache';
+import * as elasticache from './aws-elasticache/lib';
 
 export interface CacheTestsTsStackProps extends StackProps {
 }
@@ -158,10 +158,17 @@ export class CacheGroupStack extends Stack {
 
     const vpc = ec2.Vpc.fromLookup(this, 'VPC', { isDefault: true });
 
-    const nt: elasticache.NodeType = elasticache.NodeType.of(elasticache.NodeClass.M1, elasticache.NodeSize.XLARGE16);
-    nt.validate();
-    const nnt: elasticache.NodeType = new elasticache.NodeType('cache.i1.mega');
-    nnt.validate();
+    //const nt: elasticache.NodeType = elasticache.NodeType.of(elasticache.NodeClass.M1, elasticache.NodeSize.XLARGE16);
+    //nt.validate();
+    //const nnt: elasticache.NodeType = new elasticache.NodeType('cache.i1.mega');
+    //nnt.validate();
+
+    const params = new elasticache.ParameterGroup(this, 'MyParameterGroup', {
+      description: 'my desc',
+      overrides: new elasticache.RedisParameter3_2({
+        databases: 18
+      })
+    });
 
     const redisCache = new elasticache.ReplicationGroup(this, 'MyGroup', {
       nodeType: elasticache.NodeType.of(elasticache.NodeClass.T2, elasticache.NodeSize.MICRO),

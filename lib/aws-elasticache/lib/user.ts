@@ -1,4 +1,4 @@
-import { IResource, RemovalPolicy, Resource, Token } from 'aws-cdk-lib';
+import { IResource, Resource } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnUser } from 'aws-cdk-lib/aws-elasticache';
 

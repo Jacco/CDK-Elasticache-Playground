@@ -1,7 +1,11 @@
 // memcached1.4 | memcached1.5 | memcached1.6
 // redis2.6 | redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x
 
-type ParameterGroup = { [id: string] : string; };
+import { Resource } from "aws-cdk-lib";
+import { CfnParameterGroup } from "aws-cdk-lib/aws-elasticache";
+import { Construct } from "constructs";
+
+type ParameterGroupContents = { [id: string] : string; };
 
 export enum ApppendFSync {
   /**
@@ -84,8 +88,49 @@ export namespace NotifyKeySpaceEvents {
   }
 }
 
-console.log(NotifyKeySpaceEvents.toString(NotifyKeySpaceEvents.EVICTED | NotifyKeySpaceEvents.GENERIC));
+export enum MaxMemoryPolicy {
+  /**
+   * Keeps most recently used keys; removes least recently used (LRU) keys
+   */
+  ALLKEYS_LRU = "allkeys-lru",
+  /**
+   * Removes least recently used keys with the expire field set to true.
+   */
+  VOLATILE_LRU = "volatile-lru", 
+  /**
+   * Keeps frequently used keys; removes least frequently used (LFU) keys
+   */
+  ALLKEYS_LFU = "allkeys-lfu", // from version 4.0.10
+  /**
+   * Removes least frequently used keys with the expire field set to true.
+   */
+  VOLATILE_LFU = "volatile-lfu", // from version 4.0.10
+  /**
+   * Randomly removes keys to make space for the new data added.
+   */
+  ALLKEYS_RANDOM = "allkeys-random", 
+  /**
+   * Randomly removes keys with expire field set to true.
+   */
+  VOLATILE_RANDOM = "volatile-random", 
+  /**
+   * Removes keys with expire field set to true and the shortest remaining time-to-live (TTL) value.
+   */
+  VOLATILE_TTL = "volatile-ttl", 
+  /**
+   * New values aren’t saved when memory limit is reached. When a database uses replication, 
+   * this applies to the primary database
+   */
+  NOEVICTION = "noeviction"
+}
 
+
+export enum PubSubACL {
+  ALLCHANNELS = "allchannels",
+  RESETCHANNELS = "resetchannels"
+}
+
+console.log(NotifyKeySpaceEvents.toString(NotifyKeySpaceEvents.EVICTED | NotifyKeySpaceEvents.GENERIC));
 
 //const x: NotifyKeySpaceEvents = NotifyKeySpaceEvents.ALL_COMMANDS;
 //NotifyKeySpaceEvents.toString(x);
@@ -233,7 +278,15 @@ export class RedisParameterProps2_6 {
 
   readonly lua_time_limit?: string;
   readonly maxclients?: string;
-  readonly maxmemory_policy?: string; // 4.0.10 values changed
+
+  /**
+   * The eviction policy for keys when maximum memory usage is reached.
+   * 
+   * Modifiable: Yes, changes Take Effect: Immediately
+   * 
+   * @default VOLATILE_LRU
+   */
+  readonly maxmemory_policy?: MaxMemoryPolicy; // 4.0.10 values changed
   readonly maxmemory_samples?: string;
   readonly reserved_memory?: string;
   readonly set_max_intset_entries?: string;
@@ -243,7 +296,9 @@ export class RedisParameterProps2_6 {
   readonly tcp_keepalive?: string; // (>= 3.2.4 default from 0 -> 300)
 
   /**
-   * The number of seconds a node waits before timing out. Values are: 
+   * The number of seconds a node waits before timing out. 
+   * 
+   * Values are: 
    * 
    * 0    – never disconnect an idle client.
    * 
@@ -256,52 +311,6 @@ export class RedisParameterProps2_6 {
   readonly timeout?: string;
   readonly zset_max_ziplist_entries?: string;
   readonly zset_max_ziplist_value?: string;
-
-  // 4.0.10
-  readonly lazyfree_lazy_eviction?: string;
-  readonly lazyfree_lazy_expire?: string;
-  readonly lazyfree_lazy_server_del?: string;
-  readonly slave_lazy_flush?: string;
-  readonly lfu_log_factor?: string;
-  readonly lfu_decay_time?: string;
-  readonly proto_max_bulk_len?: string;
-  readonly client_query_buffer_limit?: string;
-  readonly activedefrag?: string;
-  readonly active_defrag_ignore_bytes?: string;
-  readonly active_defrag_threshold_lower?: string;
-  readonly active_defrag_threshold_upper?: string;
-  readonly active_defrag_cycle_min?: string;
-  readonly active_defrag_cycle_max?: string;
-
-  // 5.0 (renames?)
-  readonly replica_lazy_flush?: string;
-  readonly client_output_buffer_limit_replica_hard_limit?: string;
-  readonly client_output_buffer_limit_replica_soft_limit?: string;
-  readonly client_output_buffer_limit_replica_soft_seconds?: string;
-  readonly replica_allow_chaining?: string;
-  readonly min_replicas_to_write?: string;
-  readonly min_replicas_max_lag?: string;
-  readonly close_on_replica_write?: string;
-  // 5.0
-  readonly stream_node_max_bytes?: string;
-  readonly stream_node_max_entries?: string;
-  readonly active_defrag_max_scan_fields?: string;
-  // removed 6.0
-  readonly lua_replicate_commands ?: string;
-  readonly replica_ignore_maxmemory?: string;
-
-  // 5.0.3
-  readonly rename_commands?: string;
-
-  // 6.0
-  readonly cluster_allow_reads_when_down?: string;
-  readonly tracking_table_max_keys?: string;
-  readonly acllog_max_len?: string;
-  readonly active_expire_effort?: string;
-  readonly lazyfree_lazy_user_del?: string;
-
-  // 6.2
-  readonly acl_pubsub_default?: string;
 }
 
 export class RedisParameterProps_2_8 extends RedisParameterProps2_6 {
@@ -352,22 +361,214 @@ export class RedisParameterProps3_2 extends RedisParameterProps2_6 {
   readonly reserved_memory_percent?: string;
 }
 
-class RedisParameterBase {
-  props: RedisParameterPropsBase;
+export class RedisParameterProps4_0 extends RedisParameterProps3_2 {
+  /**
+   * Performs an asynchronous delete on evictions.
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default false
+   */
+  readonly lazyfree_lazy_eviction?: boolean;
 
-  constructor(props: RedisParameterPropsBase) {
+  /**
+   * Performs an asynchronous delete on expired keys.
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default no
+   */
+  readonly lazyfree_lazy_expire?: boolean;
+
+  /**
+   * Performs an asynchronous delete for commands which update values.
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default false
+   */
+  readonly lazyfree_lazy_server_del?: boolean;
+
+  /* TODO should we have modifiable No params here? */
+  /**
+   * Changes take place: N/A	Performs an asynchronous flushDB during slave sync.
+   * 
+   * Modifiable: No
+   * 
+   * @default false
+   */
+  readonly slave_lazy_flush?: boolean;
+
+  /**
+   * Set the log factor, which determines the number of key hits to saturate the key counter.
+   * 
+   * Permitted values: any integer > 0
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default 10
+   */
+  readonly lfu_log_factor?: number;
+
+  /**
+   * The amount of time in minutes to decrement the key counter.
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default 1
+   */
+  readonly lfu_decay_time?: number;
+
+  /**
+   * Enabled active defragmentation.
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default false
+   */
+  readonly activedefrag?: boolean;
+
+  /**
+   * Minimum amount of fragmentation waste to start active defrag.
+   * 
+   * Permitted values: 10485760-104857600
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   *
+   * @default 104857600 
+   */
+  readonly active_defrag_ignore_bytes?: number;
+
+  /**
+   * Minimum percentage of fragmentation to start active defrag.
+   * 
+   * Permitted values: 1-100
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   *
+   * @default 10 
+   */
+  readonly active_defrag_threshold_lower?: number;
+
+  /**
+   * Maximum percentage of fragmentation at which we use maximum effort.
+   * 
+   * Permitted values: 1-100
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default 100
+   */
+  readonly active_defrag_threshold_upper?: number;
+
+  /**
+   * Minimal effort for defrag in CPU percentage.
+   * 
+   * Permitted values: 1-75
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default 25
+   */
+  readonly active_defrag_cycle_min?: number;
+
+  /** 
+   * Maximal effort for defrag in CPU percentage.
+   * 
+   * Permitted values: 1-75
+   * 
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default 75
+   */
+  readonly active_defrag_cycle_max?: number;
+
+  /**
+   * Max size of a single client query buffer.
+   * 
+   * Permitted values: 1048576-1073741824
+   * Modifiable: Yes, changes take place: immediately
+   * 
+   * @default 1073741824
+   */
+   readonly client_query_buffer_limit?: number;
+
+   /**
+    * Max size of a single element request.
+    * 
+    * Permitted values: 1048576-536870912
+    * Modifiable: Yes, changes take place: immediately
+    * 
+    * @default 536870912
+    */
+   readonly proto_max_bulk_len?: number;
+}
+
+export class RedisParameterProps5_0 extends RedisParameterProps4_0 {
+  // 5.0 (renames?)
+  readonly replica_lazy_flush?: string;
+  readonly client_output_buffer_limit_replica_hard_limit?: string;
+  readonly client_output_buffer_limit_replica_soft_limit?: string;
+  readonly client_output_buffer_limit_replica_soft_seconds?: string;
+  readonly replica_allow_chaining?: string;
+  readonly min_replicas_to_write?: string;
+  readonly min_replicas_max_lag?: string;
+  readonly close_on_replica_write?: string;
+  // 5.0
+  readonly stream_node_max_bytes?: string;
+  readonly stream_node_max_entries?: string;
+  readonly active_defrag_max_scan_fields?: string;
+  // removed 6.0
+  readonly lua_replicate_commands ?: string;
+  readonly replica_ignore_maxmemory?: string;
+
+  // 5.0.3
+  readonly rename_commands?: string;
+}
+
+export class RedisParameterProps6_0 extends RedisParameterProps5_0 {
+  // 6.0
+  readonly cluster_allow_reads_when_down?: string;
+  readonly tracking_table_max_keys?: string;
+  readonly acllog_max_len?: string;
+  readonly active_expire_effort?: string;
+  readonly lazyfree_lazy_user_del?: string;
+
+  /**
+   * Default pubsub channel permissions for ACL users deployed to this cluster.
+   * 
+   * Modifiable: Yes, changes take effect: The existing Redis users associated to the cluster 
+   * will continue to have existing permissions. Either update the users or reboot the cluster 
+   * to update the existing Redis users.
+   * 
+   * @default ALLCHANNELS
+   */
+  readonly acl_pubsub_default?: PubSubACL;
+}
+
+export interface IParameterBase {
+  readonly cacheParameterGroupFamily: string;
+  toParameterGroup(): ParameterGroupContents;
+}
+
+class RedisParameterBase implements IParameterBase {
+  readonly props: RedisParameterPropsBase;
+  readonly cacheParameterGroupFamily: string;
+
+  constructor(cacheParameterGroupFamily: string, props: RedisParameterPropsBase) {
     this.props = props;
+    this.cacheParameterGroupFamily = cacheParameterGroupFamily
   }
 
-  public toParameterGroup(): ParameterGroup {
-    const result: ParameterGroup = {};
+  public toParameterGroup(): ParameterGroupContents {
+    const result: ParameterGroupContents = {};
     for(const [key, value] of Object.entries(this.props)) {
       let valueToStore = value;
       if (typeof value === 'boolean') {
         valueToStore = value ? 'yes' : 'no';
       }
       if (valueToStore !== undefined && redisParameterDefaults.props[key] !== value) {
-        result[key.split('_').join('-')] = valueToStore;
+        result[key.split('_').join('-')] = valueToStore.toString();
       }
     }
     return result;
@@ -376,7 +577,7 @@ class RedisParameterBase {
 
 export class RedisParameter extends RedisParameterBase {
   constructor(props: RedisParameterProps2_6) {
-    super(props)
+    super('redis2.6', props)
   }
 }
 
@@ -395,6 +596,35 @@ const redisParameterDefaults = new RedisParameter({
 
 export class RedisParameter3_2 extends RedisParameterBase {
   constructor(props: RedisParameterProps3_2) {
-    super(props);
+    super('redis3.2', props);
+  }
+}
+
+// resource stuff below
+
+export interface ParameterGroupProps {
+  readonly description: string;
+
+  readonly overrides: IParameterBase;
+}
+
+export interface IParameterGroup {
+  readonly parameterGroupName: string;
+}
+
+export class ParameterGroup extends Resource implements IParameterGroup {
+  public readonly parameterGroupName: string;
+
+  constructor(scope: Construct, id: string, props: ParameterGroupProps) {
+    super(scope, id);
+
+    // Using 'Default' as the resource id for historical reasons (usage from `Instance` and `Cluster`).
+    const securityGroup = new CfnParameterGroup(this, 'Default', {
+      cacheParameterGroupFamily: props.overrides.cacheParameterGroupFamily,
+      description: props.description,
+      properties: props.overrides.toParameterGroup(),
+    });
+
+    this.parameterGroupName = securityGroup.ref;
   }
 }

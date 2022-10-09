@@ -1,11 +1,9 @@
 import * as logs from 'aws-cdk-lib/aws-logs';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import { CfnDeliveryStream } from 'aws-cdk-lib/aws-kinesisfirehose';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
-import { PhysicalName } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { RedisCluster } from './cache-cluster';
-import { RedisVersion } from './enigine';
+import { versionsSupporting } from './private/util';
 
 // import { Construct as CoreConstruct } from 'aws-cdk-lib';
 
@@ -27,17 +25,17 @@ export enum LogType {
   ENIGINE_LOG = "engine-log"
 }
 
-interface CacheClusterLogDestinationConfig {
-  logType: LogType;
-  logFormat?: LogFormat;
-  logGroup?: logs.ILogGroup;
-  deliveryStream?: CfnDeliveryStream;
+export interface CacheClusterLogDestinationConfig {
+  readonly logType: LogType;
+  readonly logFormat?: LogFormat;
+  readonly logGroup?: logs.ILogGroup;
+  readonly deliveryStream?: CfnDeliveryStream;
 }
 
 export interface CacheClusterLogDestinationProps {
-  logFormat?: LogFormat;
-  logGroup?: logs.ILogGroup;
-  deliveryStream?: CfnDeliveryStream;
+  readonly logFormat?: LogFormat;
+  readonly logGroup?: logs.ILogGroup;
+  readonly deliveryStream?: CfnDeliveryStream;
 }
 
 /**
@@ -94,16 +92,16 @@ class CacheClusterLogDestinationBase extends CacheClusterLogDestination {
 
   validate(cluster: RedisCluster, props: CacheClusterLogDestinationConfig): void {
     if (props.logType == LogType.SLOW_LOG && !cluster.engineVersion.supportsSlowLog) {
-      const supportedVersions = RedisVersion.versionsSupporting(version => version.supportsSlowLog);
+      const supportedVersions = versionsSupporting(version => version.supportsSlowLog);
       throw new Error(`Slow-log log delivery is not available for redis engine version ${cluster.engineVersion.version}. Choose one of the following redis versions: ${supportedVersions.join(', ')}.`);
     }
     if (props.logType == LogType.ENIGINE_LOG && !cluster.engineVersion.supportsEngineLog) {
-      const supportedVersions = RedisVersion.versionsSupporting(version => version.supportsEngineLog);
+      const supportedVersions = versionsSupporting(version => version.supportsEngineLog);
       throw new Error(`Engine-log log delivery is not available for redis engine version ${cluster.engineVersion.version}. Choose one of the following redis versions: ${supportedVersions.join(', ')}.`);
     }
   }
 
-  bind(scope: Construct, _cluster: RedisCluster): CfnCacheCluster.LogDeliveryConfigurationRequestProperty {
+  bind(_scope: Construct, _cluster: RedisCluster): CfnCacheCluster.LogDeliveryConfigurationRequestProperty {
     throw new Error('Method not implemented.');
   }
 }
@@ -111,7 +109,7 @@ class CacheClusterLogDestinationBase extends CacheClusterLogDestination {
 /**
  *
  */
-class CloudWatchLogsDestination extends CacheClusterLogDestinationBase {
+export class CloudWatchLogsDestination extends CacheClusterLogDestinationBase {
   constructor(props: CacheClusterLogDestinationConfig) {
     super(props);
   }
@@ -141,13 +139,13 @@ class CloudWatchLogsDestination extends CacheClusterLogDestinationBase {
 /**
  *
  */
-class KinesisFirehoseDestination extends CacheClusterLogDestinationBase {
+export class KinesisFirehoseDestination extends CacheClusterLogDestinationBase {
   constructor(props: CacheClusterLogDestinationConfig) {
     super(props);
   }
 
   // todo should be CoreConstruct in stead of Construct
-  public bind(scope: Construct, _cluster: RedisCluster): CfnCacheCluster.LogDeliveryConfigurationRequestProperty {
+  public bind(_scope: Construct, _cluster: RedisCluster): CfnCacheCluster.LogDeliveryConfigurationRequestProperty {
     this.validate(_cluster, this.props);
     return {
       destinationType: DestinationType.KINESIS_FIRHOSE,

@@ -1,5 +1,5 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { IResource, RemovalPolicy, Resource, Token } from 'aws-cdk-lib';
+import { IResource, RemovalPolicy, Resource } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnSecurityGroup, CfnSecurityGroupIngress } from 'aws-cdk-lib/aws-elasticache';
 
@@ -50,7 +50,7 @@ export class SecurityGroup extends Resource implements ISecurityGroup {
   public static fromSecurityGroupName(scope: Construct, id: string, securityGroupName: string): ISecurityGroup {
     return new class extends Resource implements ISecurityGroup {
       public readonly securityGroupName = securityGroupName;
-      addIngress(ec2SecurityGroup: ec2.ISecurityGroup, ec2SecurityGroupOwner?: string) {
+      addIngress(_ec2SecurityGroup: ec2.ISecurityGroup, _ec2SecurityGroupOwner?: string) {
         // TODO
       }
     }(scope, id);

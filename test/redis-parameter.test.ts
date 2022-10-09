@@ -1,4 +1,4 @@
-import { ApppendFSync, RedisParameter, RedisParameter3_2, RedisParameterProps3_2 } from "../lib/redis-parameters";
+import { ApppendFSync, RedisParameter, RedisParameter3_2, RedisParameterProps3_2 } from "../lib/aws-elasticache/lib/redis-parameters";
 
 describe('engine', () => {
     test('check redis slowLog and engineLog support', () => {

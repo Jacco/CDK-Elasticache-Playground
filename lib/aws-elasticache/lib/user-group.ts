@@ -1,4 +1,4 @@
-import { IResource, RemovalPolicy, Resource, Token } from 'aws-cdk-lib';
+import { IResource, Resource } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnUserGroup } from 'aws-cdk-lib/aws-elasticache';
 import { IUser } from './user';
@@ -41,6 +41,7 @@ export class UserGroup extends Resource implements IUserGroup {
   public static fromUserGroupId(scope: Construct, id: string, userGroupId: string): IUserGroup {
     return new class extends Resource implements IUserGroup {
       addUser(user: IUser): void {
+          console.log(user);
           throw new Error('Your can not add users to an imported UserGroup.');
       }
       public readonly userGroupId = userGroupId;

@@ -1,4 +1,4 @@
-import { RedisVersion } from "../lib/enigine";
+import { RedisVersion } from "../lib/aws-elasticache/lib";
 
 describe('engine', () => {
   test('check redis slowLog and engineLog support', () => {

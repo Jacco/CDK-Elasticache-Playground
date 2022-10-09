@@ -4,7 +4,8 @@ import { CfnReplicationGroup } from "aws-cdk-lib/aws-elasticache";
 import { Construct } from "constructs";
 import { ElastiCacheResource, ElastiCacheResourceProps } from "./cache-cluster-base";
 import { RedisVersion } from "./enigine";
-import { NodeClass, NodeType } from "./node-type";
+import { NodeClass } from "./node-type";
+import { versionsSupporting } from "./private/util";
 import { SnapshotWindow } from "./snapshot-window";
 
 declare global {
@@ -30,8 +31,8 @@ export interface ISlots {
 }
 
 export abstract class Slots implements ISlots {
-    public low: number;
-    public high: number;
+    public abstract low: number;
+    public abstract high: number;
 
     static readonly MAX: number = 16383;
     static readonly MIN: number = 0;
@@ -136,8 +137,6 @@ export interface ReplicationGroupProps extends ElastiCacheResourceProps {
    */
   readonly numNodeGroups?: number;
 
-  readonly nodeType: NodeType,
-
   readonly dataTieringEnabled?: boolean;
 
   readonly cacheParameterGroupName?: string;
@@ -159,7 +158,6 @@ export interface ReplicationGroupProps extends ElastiCacheResourceProps {
 }
 
 export class ReplicationGroup extends ElastiCacheResource implements ec2.IConnectable {
-    public readonly connections: ec2.Connections;
     public readonly replicationGroupId: string;
 
     constructor(scope: Construct, id: string, props: ReplicationGroupProps) {
@@ -171,12 +169,12 @@ export class ReplicationGroup extends ElastiCacheResource implements ec2.IConnec
         // todo all features that depend could be combined so the version suggestion could be better
         const atRestEncryptionEnabled: boolean = props.atRestEncryptionEnabled ?? props.engineVersion.supportsAtRestEncryption;
         if (atRestEncryptionEnabled && !props.engineVersion.supportsAtRestEncryption) {
-            const supportedVersions = RedisVersion.versionsSupporting(version => version.supportsAtRestEncryption);
+            const supportedVersions = versionsSupporting(version => version.supportsAtRestEncryption);
             throw new Error(`At rest encryption is not supported for redis version ${props.engineVersion.version}. Choose one of the following version: ${supportedVersions.join(', ')}`);
         }
         const autoMinorVersionUpgrade: boolean = props.autoMinorVersionUpgrade ?? props.engineVersion.supportsAutoMinorVersionUpgrade;
         if (autoMinorVersionUpgrade && !props.engineVersion.supportsAutoMinorVersionUpgrade) {
-            const supportedVersions = RedisVersion.versionsSupporting(version => version.supportsAtRestEncryption);
+            const supportedVersions = versionsSupporting(version => version.supportsAtRestEncryption);
             throw new Error(`Automatically upgrading minor redis versions is not supported for redis version ${props.engineVersion.version}. Choose one of the following version: ${supportedVersions.join(', ')}`);
         }
         const dataTieringEnabled = props.nodeType.toString().startsWith(`cache.${NodeClass.R6GD}.`);
@@ -244,9 +242,12 @@ export class ReplicationGroup extends ElastiCacheResource implements ec2.IConnec
                     slots: Slots.toString(x.slots)
                 }
             }) : undefined,
-            // preferredMaintenanceWindow
-            snapshotWindow: props.snapshotWindow?.toString()
-            // notificationTopicArn
+            preferredMaintenanceWindow: props.preferedMaintenanceWindow?.toString(),
+            snapshotWindow: props.snapshotWindow?.toString(),
+            notificationTopicArn: props.notificationTopic?.topicArn,
+            // replicationGroupId
+            // multiAzEnabled (not azMode)
+            // cacheParameterGroupName
         });
 
         this.replicationGroupId = group.ref;

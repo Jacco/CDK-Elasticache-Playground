@@ -1,20 +1,12 @@
 import * as crypto from 'crypto';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { ArnFormat, CfnResource, FeatureFlags, IResource, Lazy, Names, RemovalPolicy, Resource, Stack, Token, TokenComparison } from 'aws-cdk-lib';
-import { ISubnetGroup, SubnetGroup } from './subnet-group';
+import { IResource, Lazy, RemovalPolicy, Stack, Token } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { MemcachedVersion, RedisVersion } from './enigine';
-import { NodeClass, NodeSize, NodeType } from './node-type';
-import { Port } from 'aws-cdk-lib/aws-ec2';
-import { MaintenanceWindow } from './maintenance-window';
-import { ISecurityGroup, SecurityGroup } from './security-group';
 import { Endpoint } from './endpoint';
-import { ITopic } from 'aws-cdk-lib/aws-sns';
 import { ElastiCacheResource, ElastiCacheResourceProps } from './cache-cluster-base';
 import { SnapshotWindow } from './snapshot-window';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
 import { CacheClusterLogDestination } from './log-delivery-configuration-resuest';
-import { LogStream } from 'aws-cdk-lib/aws-logs';
 
 /**
  * A CacheCluster
@@ -73,11 +65,6 @@ export interface MemcachedClusterProps extends ElastiCacheResourceProps {
   readonly engineVersion: MemcachedVersion,
 
   /**
-   * Preferred maintenance window.
-   */
-  readonly preferedMaintenanceWindow?: MaintenanceWindow;
-
-  /**
    * Specifies whether the nodes in this Memcached cluster are created in a single 
    * Availability Zone or created across multiple Availability Zones in the 
    * cluster's region.
@@ -89,13 +76,7 @@ export interface MemcachedClusterProps extends ElastiCacheResourceProps {
   readonly preferedAvailabilityZone?: string;
   readonly preferedAvailabilityZones?: string[];
 
-  /**
-   * The Amazon Simple Notification Service (SNS) topic to which notifications are sent.
-   * The topic owner must be the same as the cluster owner.
-   */
-  readonly notificationTopic?: ITopic, 
-
-  readonly engineVersionCausesReplacement?: boolean
+  readonly engineVersionCausesReplacement?: boolean;
 }
 
 function calculateClusterHash(cluster: MemcachedCluster) {
@@ -133,9 +114,6 @@ export class MemcachedCluster extends ElastiCacheResource implements IMemcachedC
 
     this.engineVersion = props.engineVersion;
 
-    if (props.preferedMaintenanceWindow && props.preferedMaintenanceWindow.durationMinutes < 60) {
-      throw new Error('The minimum duration for a maintenance window is 60 minutes');
-    }
     if (props.availabilityZonezMode === AvailabilityZoneMode.CROSS_AZ && props.preferedAvailabilityZone) {
       throw new Error('Requesting a single availability zone is not valid for cross-az clusters');
     }
@@ -157,17 +135,11 @@ export class MemcachedCluster extends ElastiCacheResource implements IMemcachedC
         }
       }
     }
-    if (props.notificationTopic) {
-      const parts = Stack.of(scope).splitArn(props.notificationTopic.topicArn, ArnFormat.SLASH_RESOURCE_NAME);
-      if (!Token.isUnresolved(parts.account) && !Token.isUnresolved(this.stack.account) && parts.account != this.stack.account) {
-        throw new Error('The topic should be of the same owner as the Cache Cluster');
-      }
-    }
 
     const cluster = new CfnCacheCluster(this, 'Resource', {
       engine: props.engineVersion.engineType,
       engineVersion: props.engineVersion.version,
-      // cacheParameterGroupName TODO
+      cacheParameterGroupName: props.cacheParameterGroup?.parameterGroupName,
       // clusterName TODO
       port: this.port, // TODO if it is the default is could be omitted
       cacheSubnetGroupName: this.subnetGroup.subnetGroupName,
@@ -178,7 +150,7 @@ export class MemcachedCluster extends ElastiCacheResource implements IMemcachedC
       preferredAvailabilityZone: props.availabilityZonezMode == AvailabilityZoneMode.CROSS_AZ ? props.preferedAvailabilityZone : undefined,
       preferredAvailabilityZones: props.preferedAvailabilityZones,
       preferredMaintenanceWindow: props.preferedMaintenanceWindow?.toString(),
-      notificationTopicArn: props.notificationTopic?.topicArn
+      notificationTopicArn: props.notificationTopic?.topicArn,
     })
 
     this.clusterName = cluster.ref
@@ -224,14 +196,14 @@ export interface RedisClusterProps extends ElastiCacheResourceProps {
    * you must delete the existing cluster or replication group and create it anew 
    * with the earlier engine version.
    */
-  engineVersion: RedisVersion,
+  readonly engineVersion: RedisVersion,
 
   /**
    * The daily time range (in UTC) during which ElastiCache begins taking a daily snapshot of your node group (shard).
    * 
    * If you do not specify this parameter, ElastiCache automatically chooses an appropriate time range.
    */
-  snapshotWindow?: SnapshotWindow,
+  readonly snapshotWindow?: SnapshotWindow,
 
   /**
    * The number of days for which ElastiCache retains automatic snapshots before deleting them. For example, if you
@@ -239,13 +211,12 @@ export interface RedisClusterProps extends ElastiCacheResourceProps {
    * 
    * @default 0 (i.e., automatic backups are disabled for this cache cluster).
    */
-  snapshotRetentionLimit?: number,
+  readonly snapshotRetentionLimit?: number,
 
-  logs?: [CacheClusterLogDestination]
+  readonly logs?: [CacheClusterLogDestination]
 }
 
 export class RedisCluster extends ElastiCacheResource implements IRedisCluster {
-  public readonly connections: ec2.Connections;
   public readonly clusterName: string;
   public readonly redisEndpointAddress: string;
   public readonly redisEndpointPort: string;
@@ -284,18 +255,17 @@ export class RedisCluster extends ElastiCacheResource implements IRedisCluster {
       numCacheNodes: props.numCacheNodes,
       cacheSubnetGroupName: this.subnetGroup.subnetGroupName,
       vpcSecurityGroupIds: this.securityGroups.length > 0 ? this.securityGroups.map(sg => sg.securityGroupId) : undefined,
-      // autoMinorVersionUpgrade
       // snapshotArns
       // snapshotName
       // autoMinorVersionUpgrade
-      // azMode
-      // cacheParameterGroupName
+      cacheParameterGroupName: props.cacheParameterGroup?.parameterGroupName,
       // cacheSecurityGroupNames ??
       // clusterName
-      // notificationTopicArn
+      notificationTopicArn: props.notificationTopic?.topicArn,
+      // azMode
       // preferredAvailabilityZone
       // preferredAvailabilityZones
-      // preferredMaintenanceWindow
+      preferredMaintenanceWindow: props.preferedMaintenanceWindow?.toString(),
       snapshotWindow: props.snapshotWindow?.toString(),
       snapshotRetentionLimit: props.snapshotRetentionLimit,
       logDeliveryConfigurations: logDestinations.length > 0 ? logDestinations : undefined

@@ -1,7 +1,7 @@
 /**
  * The name of the cache engine to be used for this cluster.
  */
- enum CacheClusterEngineType {
+enum CacheClusterEngineType {
   /**
    * Memcached, a simple in-memory key-value store that can run on large nodes. Supports dynamically 
    * adding or removing nodes. Can also cache objects.
@@ -73,7 +73,7 @@ export class MemcachedVersion {
     return new MemcachedVersion(version);
   }
 
-  public readonly engineType: CacheClusterEngineType = CacheClusterEngineType.MEMCACHED;
+  public readonly engineType: string = CacheClusterEngineType.MEMCACHED;
 
   /**
    *
@@ -187,17 +187,7 @@ export class RedisVersion {
     return new RedisVersion(major, minor, patch);
   }
 
-  public readonly engineType: CacheClusterEngineType = CacheClusterEngineType.REDIS;
-
-  public static versionsSupporting(predicate: (version: RedisVersion) => boolean): string[] {
-    const result = [];
-    for (const version of Object.values(RedisVersion)) {
-      if (predicate(version)) {
-        result.push(version.version);
-      }
-    }
-    return result;
-  }
+  public readonly engineType: string = CacheClusterEngineType.REDIS;
 
   public get supportsEngineLog(): boolean { return ((this.major == 6) && (this.minor >= 2)) || (this.major > 6); };
   public get supportsSlowLog(): boolean { return (this.major >= 6); };

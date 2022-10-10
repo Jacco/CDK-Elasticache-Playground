@@ -287,8 +287,33 @@ export class RedisParameterProps2_6 {
    * @default VOLATILE_LRU
    */
   readonly maxmemory_policy?: MaxMemoryPolicy; // 4.0.10 values changed
-  readonly maxmemory_samples?: string;
-  readonly reserved_memory?: string;
+
+  /**
+   * For least-recently-used (LRU) and time-to-live (TTL) calculations, this parameter represents the sample size of keys to check. By default, Redis chooses 3 keys and uses the one that was used least recently.
+   * 
+   * Modifiable: Yes, changes Take Effect: Immediately
+   * 
+   * @default 3
+   */
+  readonly maxmemory_samples?: number;
+
+  /**
+   * The total memory, in bytes, reserved for non-data usage. By default, 
+   * the Redis node will grow until it consumes the node's maxmemory (see 
+   * Redis node-type specific parameters). If this occurs, then node performance 
+   * will likely suffer due to excessive memory paging. By reserving memory you 
+   * can set aside some of the available memory for non-Redis purposes to help 
+   * reduce the amount of paging.
+   * 
+   * This parameter is specific to ElastiCache, and is not part of the standard Redis distribution.
+   * 
+   * For more information, see reserved-memory-percent and Managing Reserved Memory.
+   * 
+   * Modifiable: Yes, changes Take Effect: Immediately
+   * 
+   * @default 0
+   */
+  readonly reserved_memory?: number;
   readonly set_max_intset_entries?: string;
   readonly slave_allow_chaining?: string;
   readonly slowlog_log_slower_than?: string;
@@ -504,10 +529,213 @@ export class RedisParameterProps4_0 extends RedisParameterProps3_2 {
    readonly proto_max_bulk_len?: number;
 }
 
+export class RenameCommands {
+  APPEND?: string;
+  AUTH?: string;
+  BITCOUNT?: string;
+  BITFIELD?: string;
+  BITOP?: string;
+  BITPOS?: string;
+  BLPOP?: string;
+  BRPOP?: string;
+  BRPOPLPUSH?: string;
+  BZPOPMIN?: string;
+  BZPOPMAX?: string;
+  CLIENT?: string;
+  CLUSTER?: string;
+  COMMAND?: string;
+  DBSIZE?: string;
+  DECR?: string;
+  DECRBY?: string;
+  DEL?: string;
+  DISCARD?: string;
+  DUMP?: string;
+  ECHO?: string;
+  EVAL?: string;
+  EVALSHA?: string;
+  EXEC?: string;
+  EXISTS?: string;
+  EXPIRE?: string;
+  EXPIREAT?: string;
+  FLUSHALL?: string;
+  FLUSHDB?: string;
+  GEOADD?: string;
+  GEOHASH?: string;
+  GEOPOS?: string;
+  GEODIST?: string;
+  GEORADIUS?: string;
+  GEORADIUSBYMEMBER?: string;
+  GET?: string;
+  GETBIT?: string;
+  GETRANGE?: string;
+  GETSET?: string;
+  HDEL?: string;
+  HEXISTS?: string;
+  HGET?: string;
+  HGETALL?: string;
+  HINCRBY?: string;
+  HINCRBYFLOAT?: string;
+  HKEYS?: string;
+  HLEN?: string;
+  HMGET?: string;
+  HMSET?: string;
+  HSET?: string;
+  HSETNX?: string;
+  HSTRLEN?: string;
+  HVALS?: string;
+  INCR?: string;
+  INCRBY?: string;
+  INCRBYFLOAT?: string;
+  INFO?: string;
+  KEYS?: string;
+  LASTSAVE?: string;
+  LINDEX?: string;
+  LINSERT?: string;
+  LLEN?: string;
+  LPOP?: string;
+  LPUSH?: string;
+  LPUSHX?: string;
+  LRANGE?: string;
+  LREM?: string;
+  LSET?: string;
+  LTRIM?: string;
+  MEMORY?: string;
+  MGET?: string;
+  MONITOR?: string;
+  MOVE?: string;
+  MSET?: string;
+  MSETNX?: string;
+  MULTI?: string;
+  OBJECT?: string;
+  PERSIST?: string;
+  PEXPIRE?: string;
+  PEXPIREAT?: string;
+  PFADD?: string;
+  PFCOUNT?: string;
+  PFMERGE?: string;
+  PING?: string;
+  PSETEX?: string;
+  PSUBSCRIBE?: string;
+  PUBSUB?: string;
+  PTTL?: string;
+  PUBLISH?: string;
+  PUNSUBSCRIBE?: string;
+  RANDOMKEY?: string;
+  READONLY?: string;
+  READWRITE?: string;
+  RENAME?: string;
+  RENAMENX?: string;
+  RESTORE?: string;
+  ROLE?: string;
+  RPOP?: string;
+  RPOPLPUSH?: string;
+  RPUSH?: string;
+  RPUSHX?: string;
+  SADD?: string;
+  SCARD?: string;
+  SCRIPT?: string;
+  SDIFF?: string;
+  SDIFFSTORE?: string;
+  SELECT?: string;
+  SET?: string;
+  SETBIT?: string;
+  SETEX?: string;
+  SETNX?: string;
+  SETRANGE?: string;
+  SINTER?: string;
+  SINTERSTORE?: string;
+  SISMEMBER?: string;
+  SLOWLOG?: string;
+  SMEMBERS?: string;
+  SMOVE?: string;
+  SORT?: string;
+  SPOP?: string;
+  SRANDMEMBER?: string;
+  SREM?: string;
+  STRLEN?: string;
+  SUBSCRIBE?: string;
+  SUNION?: string;
+  SUNIONSTORE?: string;
+  SWAPDB?: string;
+  TIME?: string;
+  TOUCH?: string;
+  TTL?: string;
+  TYPE?: string;
+  UNSUBSCRIBE?: string;
+  UNLINK?: string;
+  UNWATCH?: string;
+  WAIT?: string;
+  WATCH?: string;
+  ZADD?: string;
+  ZCARD?: string;
+  ZCOUNT?: string;
+  ZINCRBY?: string;
+  ZINTERSTORE?: string;
+  ZLEXCOUNT?: string;
+  ZPOPMAX?: string;
+  ZPOPMIN?: string;
+  ZRANGE?: string;
+  ZRANGEBYLEX?: string;
+  ZREVRANGEBYLEX?: string;
+  ZRANGEBYSCORE?: string;
+  ZRANK?: string;
+  ZREM?: string;
+  ZREMRANGEBYLEX?: string;
+  ZREMRANGEBYRANK?: string;
+  ZREMRANGEBYSCORE?: string;
+  ZREVRANGE?: string;
+  ZREVRANGEBYSCORE?: string;
+  ZREVRANK?: string;
+  ZSCORE?: string;
+  ZUNIONSTORE?: string;
+  SCAN?: string;
+  SSCAN?: string;
+  HSCAN?: string;
+  ZSCAN?: string;
+  XINFO?: string;
+  XADD?: string;
+  XTRIM?: string;
+  XDEL?: string;
+  XRANGE?: string;
+  XREVRANGE?: string;
+  XLEN?: string;
+  XREAD?: string;
+  XGROUP?: string;
+  XREADGROUP?: string;
+  XACK?: string;
+  XCLAIM?: string;
+  XPENDING?: string;
+  GEORADIUS_RO?: string;
+  GEORADIUSBYMEMBER_RO?: string;
+  LOLWUT?: string;
+  XSETID?: string;
+  SUBSTR?: string;
+}
+
 export class RedisParameterProps5_0 extends RedisParameterProps4_0 {
-  // 5.0 (renames?)
-  readonly replica_lazy_flush?: string;
-  readonly client_output_buffer_limit_replica_hard_limit?: string;
+  /**
+   * Performs an asynchronous flushDB during replica sync. (renamed from: slave-lazy-flush)
+   * 
+   * Modifiable: No
+   * 
+   * @default true
+   */
+  readonly replica_lazy_flush?: boolean;
+  /** @deprecated */
+  readonly slave_lazy_flush?: boolean;
+
+  /**
+   * For Redis read replicas: If a client's output buffer reaches the specified number 
+   * of bytes, the client will be disconnected. (renamed from: client-output-buffer-limit-slave-hard-limit)
+   * 
+   * Modifiable: No
+   * 
+   * @efault For values see Redis node-type specific parameters
+   */
+  readonly client_output_buffer_limit_replica_hard_limit?: number;
+  /** @deprecated */
+  readonly client_output_buffer_limit_slave_hard_limit?: number;
+
   readonly client_output_buffer_limit_replica_soft_limit?: string;
   readonly client_output_buffer_limit_replica_soft_seconds?: string;
   readonly replica_allow_chaining?: string;
@@ -519,11 +747,23 @@ export class RedisParameterProps5_0 extends RedisParameterProps4_0 {
   readonly stream_node_max_entries?: string;
   readonly active_defrag_max_scan_fields?: string;
   // removed 6.0
-  readonly lua_replicate_commands ?: string;
+  readonly lua_replicate_commands?: string;
   readonly replica_ignore_maxmemory?: string;
 
-  // 5.0.3
-  readonly rename_commands?: string;
+  /**
+   * Allows you to rename potentially dangerous or expensive Redis commands that might cause 
+   * accidental data loss, such as FLUSHALL or FLUSHDB. This is similar to the rename-command
+   * configuration in open source Redis. However, ElastiCache has improved the experience by 
+   * providing a fully managed workflow. The command name changes are applied immediately, and 
+   * automatically propagated across all nodes in the cluster that contain the command list. 
+   * There is no intervention required on your part, such as rebooting nodes.
+   * 
+   * All renamed commands should be alphanumeric.
+   * The maximum length of new command names is 20 alphanumeric characters.
+   * When renaming commands, ensure that you update the parameter group associated with your cluster.
+   * To prevent a command's use entirely, use the keyword blocked
+   */
+  readonly rename_commands?: RenameCommands;
 }
 
 export class RedisParameterProps6_X extends RedisParameterProps5_0 {
@@ -627,6 +867,9 @@ class RedisParameterBase implements IParameterBase {
       if (typeof value === 'boolean') {
         valueToStore = value ? 'yes' : 'no';
       }
+      if (value instanceof RenameCommands) {
+        // todo make rename string
+      }
       if (valueToStore !== undefined && this.defaults[key] !== value) {
         result[key.split('_').join('-')] = valueToStore.toString();
       }
@@ -701,7 +944,7 @@ const redisParameterDefaults6_X: RedisParameterProps6_X = {
   acllog_max_len: 128,
   active_expire_effort: 1,
   lazyfree_lazy_user_del: false,
-  acl_pubsub_default: PubSubACL.ALLCHANNELS
+  acl_pubsub_default: PubSubACL.ALLCHANNELS,
 };
 
 export class RedisParameter6_X extends RedisParameterBase {

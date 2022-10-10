@@ -313,7 +313,7 @@ export class RedisParameterProps2_6 {
   readonly zset_max_ziplist_value?: string;
 }
 
-export class RedisParameterProps_2_8 extends RedisParameterProps2_6 {
+export class RedisParameterProps2_8 extends RedisParameterProps2_6 {
   // from 2.8.6
   /**
    * The number of seconds within which the primary node must receive a ping request from a 
@@ -346,7 +346,7 @@ export class RedisParameterProps_2_8 extends RedisParameterProps2_6 {
   readonly close_on_slave_write?: string;
 }
 
-export class RedisParameterProps3_2 extends RedisParameterProps2_6 {
+export class RedisParameterProps3_2 extends RedisParameterProps2_8 {
   /**
    * @deprecated
    */
@@ -526,13 +526,72 @@ export class RedisParameterProps5_0 extends RedisParameterProps4_0 {
   readonly rename_commands?: string;
 }
 
-export class RedisParameterProps6_0 extends RedisParameterProps5_0 {
-  // 6.0
-  readonly cluster_allow_reads_when_down?: string;
-  readonly tracking_table_max_keys?: string;
-  readonly acllog_max_len?: string;
-  readonly active_expire_effort?: string;
-  readonly lazyfree_lazy_user_del?: string;
+export class RedisParameterProps6_X extends RedisParameterProps5_0 {
+  /**
+   * When set to true, a Redis (cluster mode enabled) replication group continues to
+   * process read commands even when a node is not able to reach a quorum of primaries.
+   * 
+   * When set to the default of false, the replication group rejects all commands. We recommend 
+   * setting this value to yes if you are using a cluster with fewer than three node groups 
+   * or your application can safely handle stale reads.
+   * 
+   * Modifiable: Yes, changes take effect: Immediately across all nodes in the cluster
+   * 
+   * @default false
+   */
+  readonly cluster_allow_reads_when_down?: boolean;
+
+  /**
+   * To assist client-side caching, Redis supports tracking which clients have accessed which keys.
+   * 
+   * When the tracked key is modified, invalidation messages are sent to all clients to notify them 
+   * their cached values are no longer valid. This value enables you to specify the upper bound of this 
+   * table. After this parameter value is exceeded, clients are sent invalidation randomly. This value 
+   * should be tuned to limit memory usage while still keeping track of enough keys. Keys are also 
+   * invalidated under low memory conditions.
+   * 
+   * Modifiable: Yes, changes take effect: Immediately across all nodes in the cluster
+   * 
+   * @default 1,000,000
+   */
+  readonly tracking_table_max_keys?: number;
+
+  /**
+   * This value corresponds to the max number of entries in the ACL log.
+   * 
+   * Modifiable: Yes, changes take effect: Immediately across all nodes in the cluster
+   * 
+   * @default 128
+   */
+  readonly acllog_max_len?: number;
+
+  /**
+   * Redis deletes keys that have exceeded their time to live by two mechanisms. In one, 
+   * a key is accessed and is found to be expired. In the other, a periodic job samples 
+   * keys and causes those that have exceeded their time to live to expire. This parameter 
+   * defines the amount of effort that Redis uses to expire items in the periodic job.
+   * 
+   * The default value of 1 tries to avoid having more than 10 percent of expired keys still 
+   * in memory. It also tries to avoid consuming more than 25 percent of total memory and to 
+   * add latency to the system. You can increase this value up to 10 to increase the amount 
+   * of effort spent on expiring keys. The tradeoff is higher CPU and potentially higher latency. 
+   * We recommend a value of 1 unless you are seeing high memory usage and can tolerate an 
+   * increase in CPU utilization.
+   * 
+   * Modifiable: Yes, Changes take effect: Immediately across all nodes in the cluster
+   * 
+   * @default 1
+   */
+  readonly active_expire_effort?: number;
+
+  /**
+   * When the value is set to true, the DEL command acts the same as UNLINK.
+   * 
+   * Modifiable: Yes, changes take effect: Immediately across all nodes in the cluster
+   * 
+   * @default false
+   */
+  readonly lazyfree_lazy_user_del?: boolean;
 
   /**
    * Default pubsub channel permissions for ACL users deployed to this cluster.
@@ -554,8 +613,9 @@ export interface IParameterBase {
 class RedisParameterBase implements IParameterBase {
   readonly props: RedisParameterPropsBase;
   readonly cacheParameterGroupFamily: string;
+  readonly defaults: RedisParameterPropsBase;
 
-  constructor(cacheParameterGroupFamily: string, props: RedisParameterPropsBase) {
+  constructor(cacheParameterGroupFamily: string, props: RedisParameterPropsBase, defaults: RedisParameterPropsBase) {
     this.props = props;
     this.cacheParameterGroupFamily = cacheParameterGroupFamily
   }
@@ -567,7 +627,7 @@ class RedisParameterBase implements IParameterBase {
       if (typeof value === 'boolean') {
         valueToStore = value ? 'yes' : 'no';
       }
-      if (valueToStore !== undefined && redisParameterDefaults.props[key] !== value) {
+      if (valueToStore !== undefined && this.defaults[key] !== value) {
         result[key.split('_').join('-')] = valueToStore.toString();
       }
     }
@@ -575,13 +635,7 @@ class RedisParameterBase implements IParameterBase {
   }
 }
 
-export class RedisParameter extends RedisParameterBase {
-  constructor(props: RedisParameterProps2_6) {
-    super('redis2.6', props)
-  }
-}
-
-const redisParameterDefaults = new RedisParameter({
+const redisParameterDefaults2_6: RedisParameterProps2_6 = {
   activerehashing: true,
   appendonly: false,
   appendfsync: ApppendFSync.EVERY_SECOND,
@@ -592,11 +646,67 @@ const redisParameterDefaults = new RedisParameter({
   client_output_buffer_limit_pubsub_soft_limit: 8388608,
   client_output_buffer_limit_pubsub_soft_seconds: 60,
   databases: 16,
-});
+};
+
+export class RedisParameter2_6 extends RedisParameterBase {
+  constructor(props: RedisParameterProps2_6) {
+    super('redis2.6', props, redisParameterDefaults2_6)
+  }
+}
+
+const redisParameterDefaults2_8: RedisParameterProps2_8 = {
+  ...redisParameterDefaults2_6,
+};
+
+export class RedisParameter2_8 extends RedisParameterBase {
+  constructor(props: RedisParameterProps2_8) {
+    super('redis2.8', props, redisParameterDefaults2_8);
+  }
+}
+
+const redisParameterDefaults3_2: RedisParameterProps3_2 = {
+  ...redisParameterDefaults2_8,
+};
 
 export class RedisParameter3_2 extends RedisParameterBase {
   constructor(props: RedisParameterProps3_2) {
-    super('redis3.2', props);
+    super('redis3.2', props, redisParameterDefaults3_2);
+  }
+}
+
+const redisParameterDefaults4_0: RedisParameterProps4_0 = {
+  ...redisParameterDefaults3_2,
+};
+
+export class RedisParameter4_0 extends RedisParameterBase {
+  constructor(props: RedisParameterProps4_0) {
+    super('redis4.0', props, redisParameterDefaults4_0);
+  }
+}
+
+const redisParameterDefaults5_0: RedisParameterProps5_0 = {
+  ...redisParameterDefaults4_0,
+};
+
+export class RedisParameter5_0 extends RedisParameterBase {
+  constructor(props: RedisParameterProps5_0) {
+    super('redis5.0', props, redisParameterDefaults5_0);
+  }
+}
+
+const redisParameterDefaults6_X: RedisParameterProps6_X = {
+  ...redisParameterDefaults5_0,
+  cluster_allow_reads_when_down: false,
+  tracking_table_max_keys: 1000000,
+  acllog_max_len: 128,
+  active_expire_effort: 1,
+  lazyfree_lazy_user_del: false,
+  acl_pubsub_default: PubSubACL.ALLCHANNELS
+};
+
+export class RedisParameter6_X extends RedisParameterBase {
+  constructor(props: RedisParameterProps6_X) {
+    super('redis6.x', props, redisParameterDefaults6_X);
   }
 }
 

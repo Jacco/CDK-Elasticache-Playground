@@ -131,7 +131,7 @@ export enum PubSubACL {
 }
 
 
-export class RenameCommands {
+export interface RenameCommands {
   APPEND?: string;
   AUTH?: string;
   BITCOUNT?: string;
@@ -323,7 +323,7 @@ export class RedisParameterPropsBase {
     [id: string]: any;
 }
 
-export class RedisParameterProps2_6 {
+export class RedisParameterProps2_6 { // <-- TODO can these be (internal) interfaces? I want to hide some implementation details
   /**
    * Determines whether to enable Redis' active rehashing feature. The main hash table is rehashed ten
    * times per second; each rehash operation consumes 1 millisecond of CPU time.
@@ -747,9 +747,24 @@ export class RedisParameterProps5_0 extends RedisParameterProps4_0 {
   readonly stream_node_max_bytes?: string;
   readonly stream_node_max_entries?: string;
   readonly active_defrag_max_scan_fields?: string;
-  // removed 6.0
-  readonly lua_replicate_commands?: string;
-  readonly replica_ignore_maxmemory?: string;
+
+  /**
+   * Always enable Lua effect replication or not in Lua scripts
+   * 
+   * Modifiable: Yes, changes take effect: Immediately
+   * 
+   * @default true
+   */
+  readonly lua_replicate_commands?: boolean;
+
+  /**
+   * Determines if replica ignores maxmemory setting by not evicting items independent from the primary
+   * 
+   * Modifiable: No
+   * 
+   * @default true
+   */
+  readonly replica_ignore_maxmemory?: boolean;
 
   /**
    * Allows you to rename potentially dangerous or expensive Redis commands that might cause 
@@ -844,6 +859,9 @@ export class RedisParameterProps6_X extends RedisParameterProps5_0 {
    * @default ALLCHANNELS
    */
   readonly acl_pubsub_default?: PubSubACL;
+
+  /** @deprecated */
+  readonly lua_replicate_commands?: boolean;
 }
 
 export interface IParameterBase {
@@ -868,8 +886,12 @@ class RedisParameterBase implements IParameterBase {
       if (typeof value === 'boolean') {
         valueToStore = value ? 'yes' : 'no';
       }
-      if (value instanceof RenameCommands) {
-        // todo make rename string
+      if (key == 'rename_commands') {
+        const renames: string[] = [];
+        for(const [name, rename] of Object.entries(value)) {
+          renames.push(`${name} ${rename}`);
+        }
+        valueToStore = renames.join(' ');
       }
       if (valueToStore !== undefined && this.defaults[key] !== value) {
         result[key.split('_').join('-')] = valueToStore.toString();

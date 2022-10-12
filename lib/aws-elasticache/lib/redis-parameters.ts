@@ -314,7 +314,7 @@ export interface RenameCommands {
   SUBSTR?: string;
 }
 
-console.log(NotifyKeySpaceEvents.toString(NotifyKeySpaceEvents.EVICTED | NotifyKeySpaceEvents.GENERIC));
+//console.log(NotifyKeySpaceEvents.toString(NotifyKeySpaceEvents.EVICTED | NotifyKeySpaceEvents.GENERIC));
 
 //const x: NotifyKeySpaceEvents = NotifyKeySpaceEvents.ALL_COMMANDS;
 //NotifyKeySpaceEvents.toString(x);
@@ -869,14 +869,14 @@ export interface IParameterBase {
   toParameterGroup(): ParameterGroupContents;
 }
 
-class RedisParameterBase implements IParameterBase {
+abstract class RedisParameterBase implements IParameterBase {
   readonly props: RedisParameterPropsBase;
   readonly cacheParameterGroupFamily: string;
-  readonly defaults: RedisParameterPropsBase;
+  static readonly defaults: RedisParameterPropsBase;
 
-  constructor(cacheParameterGroupFamily: string, props: RedisParameterPropsBase, defaults: RedisParameterPropsBase) {
+  constructor(cacheParameterGroupFamily: string, props: RedisParameterPropsBase) {
     this.props = props;
-    this.cacheParameterGroupFamily = cacheParameterGroupFamily
+    this.cacheParameterGroupFamily = cacheParameterGroupFamily;
   }
 
   public toParameterGroup(): ParameterGroupContents {
@@ -893,7 +893,8 @@ class RedisParameterBase implements IParameterBase {
         }
         valueToStore = renames.join(' ');
       }
-      if (valueToStore !== undefined && this.defaults[key] !== value) {
+      const defaults = (this.constructor as typeof RedisParameterBase).defaults;
+      if (valueToStore !== undefined && defaults[key] !== value) {
         result[key.split('_').join('-')] = valueToStore.toString();
       }
     }
@@ -901,78 +902,78 @@ class RedisParameterBase implements IParameterBase {
   }
 }
 
-const redisParameterDefaults2_6: RedisParameterProps2_6 = {
-  activerehashing: true,
-  appendonly: false,
-  appendfsync: ApppendFSync.EVERY_SECOND,
-  client_output_buffer_limit_normal_hard_limit: 0,
-  client_output_buffer_limit_normal_soft_limit: 0,
-  client_output_buffer_limit_normal_soft_seconds: 0,
-  client_output_buffer_limit_pubsub_hard_limit: 33554432,
-  client_output_buffer_limit_pubsub_soft_limit: 8388608,
-  client_output_buffer_limit_pubsub_soft_seconds: 60,
-  databases: 16,
-};
-
 export class RedisParameter2_6 extends RedisParameterBase {
+  public static readonly defaults: RedisParameterProps2_6 = {
+    activerehashing: true,
+    appendonly: false,
+    appendfsync: ApppendFSync.EVERY_SECOND,
+    client_output_buffer_limit_normal_hard_limit: 0,
+    client_output_buffer_limit_normal_soft_limit: 0,
+    client_output_buffer_limit_normal_soft_seconds: 0,
+    client_output_buffer_limit_pubsub_hard_limit: 33554432,
+    client_output_buffer_limit_pubsub_soft_limit: 8388608,
+    client_output_buffer_limit_pubsub_soft_seconds: 60,
+    databases: 16,
+  };
+
   constructor(props: RedisParameterProps2_6) {
-    super('redis2.6', props, redisParameterDefaults2_6)
+    super('redis2.6', props)
   }
 }
-
-const redisParameterDefaults2_8: RedisParameterProps2_8 = {
-  ...redisParameterDefaults2_6,
-};
 
 export class RedisParameter2_8 extends RedisParameterBase {
+  public static readonly defaults: RedisParameterProps2_8 = {
+    ...RedisParameter2_6.defaults,
+  };
+
   constructor(props: RedisParameterProps2_8) {
-    super('redis2.8', props, redisParameterDefaults2_8);
+    super('redis2.8', props);
   }
 }
-
-const redisParameterDefaults3_2: RedisParameterProps3_2 = {
-  ...redisParameterDefaults2_8,
-};
 
 export class RedisParameter3_2 extends RedisParameterBase {
+  public static readonly defaults: RedisParameterProps3_2 = {
+    ...RedisParameter2_8.defaults,
+  };
+
   constructor(props: RedisParameterProps3_2) {
-    super('redis3.2', props, redisParameterDefaults3_2);
+    super('redis3.2', props);
   }
 }
-
-const redisParameterDefaults4_0: RedisParameterProps4_0 = {
-  ...redisParameterDefaults3_2,
-};
 
 export class RedisParameter4_0 extends RedisParameterBase {
+  public static readonly defaults: RedisParameterProps4_0 = {
+    ...RedisParameter3_2.defaults,
+  };
+
   constructor(props: RedisParameterProps4_0) {
-    super('redis4.0', props, redisParameterDefaults4_0);
+    super('redis4.0', props);
   }
 }
-
-const redisParameterDefaults5_0: RedisParameterProps5_0 = {
-  ...redisParameterDefaults4_0,
-};
 
 export class RedisParameter5_0 extends RedisParameterBase {
+  public static readonly defaults: RedisParameterProps5_0 = {
+    ...RedisParameter4_0.defaults,
+  };
+
   constructor(props: RedisParameterProps5_0) {
-    super('redis5.0', props, redisParameterDefaults5_0);
+    super('redis5.0', props);
   }
 }
 
-const redisParameterDefaults6_X: RedisParameterProps6_X = {
-  ...redisParameterDefaults5_0,
-  cluster_allow_reads_when_down: false,
-  tracking_table_max_keys: 1000000,
-  acllog_max_len: 128,
-  active_expire_effort: 1,
-  lazyfree_lazy_user_del: false,
-  acl_pubsub_default: PubSubACL.ALLCHANNELS,
-};
-
 export class RedisParameter6_X extends RedisParameterBase {
+  public static readonly defaults: RedisParameterProps6_X = {
+    ...RedisParameter5_0.defaults,
+    cluster_allow_reads_when_down: false,
+    tracking_table_max_keys: 1000000,
+    acllog_max_len: 128,
+    active_expire_effort: 1,
+    lazyfree_lazy_user_del: false,
+    acl_pubsub_default: PubSubACL.ALLCHANNELS,
+  };
+
   constructor(props: RedisParameterProps6_X) {
-    super('redis6.x', props, redisParameterDefaults6_X);
+    super('redis6.x', props);
   }
 }
 

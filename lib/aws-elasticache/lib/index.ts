@@ -10,5 +10,6 @@ export * from './subnet-group';
 export * from './endpoint';
 
 export * from './redis-parameters';
+export * from './memcached-parameters';
 
 export * from './cache-cluster-base'; // this one should not be exported

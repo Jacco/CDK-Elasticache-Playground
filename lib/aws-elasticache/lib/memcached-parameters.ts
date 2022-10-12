@@ -1,9 +1,9 @@
-enum BindingProtocol {
+export enum BindingProtocol {
   ASCII = "ascii",
   AUTO = "auto"
 }
 
-interface Memcached1_4_5 {
+export interface Memcached1_4_5 {
   /**
    * The backlog queue limit.
    * 

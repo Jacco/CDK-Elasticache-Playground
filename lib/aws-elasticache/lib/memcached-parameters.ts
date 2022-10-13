@@ -3,7 +3,7 @@ export enum BindingProtocol {
   AUTO = "auto"
 }
 
-export interface Memcached1_4_5 {
+interface Memcached1_4_5 {
   /**
    * The backlog queue limit.
    * 
@@ -436,3 +436,5 @@ interface Memcached1_6_6 extends Memcached1_5_10 {
 const memcachedDefaults1_6_6: Memcached1_6_6 = {
   ...memcachedDefaults1_5_10,
 }
+
+memcachedDefaults1_6_6

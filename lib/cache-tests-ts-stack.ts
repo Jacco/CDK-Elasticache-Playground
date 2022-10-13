@@ -165,7 +165,7 @@ export class CacheGroupStack extends Stack {
 
     const params = new elasticache.ParameterGroup(this, 'MyParameterGroup', {
       description: 'my desc',
-      overrides: new elasticache.RedisParameter3_2({
+      overrides: new elasticache.RedisParameter32({
         databases: 18
       })
     });

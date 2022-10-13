@@ -189,14 +189,14 @@ export class RedisVersion {
 
   public readonly engineType: string = CacheClusterEngineType.REDIS;
 
-  public get supportsEngineLog(): boolean { return ((this.major == 6) && (this.minor >= 2)) || (this.major > 6); };
-  public get supportsSlowLog(): boolean { return (this.major >= 6); };
+  public get supportsEngineLog(): boolean { return ((this.major == 6) && (this.minor >= 2)) || (this.major > 6); }
+  public get supportsSlowLog(): boolean { return (this.major >= 6); }
   public readonly supportsAtRestEncryption: boolean;
   public readonly supportsClusterMode: boolean;
   public readonly supportsAutoMinorVersionUpgrade: boolean;
   public readonly supportsDataTiering: boolean;
 
-  public get version(): string { return this.patch ? `${this.major}.${this.minor}.${this.patch}` : `${this.major}.${this.minor}` };
+  public get version(): string { return this.patch ? `${this.major}.${this.minor}.${this.patch}` : `${this.major}.${this.minor}` }
   /**
    *
    * @param major Redis major version number
